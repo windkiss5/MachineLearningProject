@@ -14,20 +14,24 @@ class PCA:
 
     # 特征值分解
     def PCA_EVD(self, discardDimensions = 1):
-        print("原始数据")
-        print(pd.DataFrame(self.X))
-        # 计算方差矩阵
-        sigma = np.cov(self.X, rowvar=False)
         # 计算均值
         mu = np.mean(self.X, axis=0)
         # 中心化
         self.X = self.X - mu
+        # 计算方差矩阵
+        sigma = np.cov(self.X, rowvar=False)
         # 提取sigma的特征值,特征向量
         eigvals, eigvecs = np.linalg.eig(sigma)
+        print("排序前的特征值")
+        print(pd.DataFrame(eigvals))
+        print("排序前的特征矩阵")
+        print(pd.DataFrame(eigvecs))
         # 升序排序
         index =np.argsort(eigvals)
         eigvals = eigvals[index]
         eigvecs = eigvecs[:,index]
+        print("排序后的特征向量")
+        print(pd.DataFrame(eigvecs))
         # 重构
         resX = self.X.dot(eigvecs)
         plt.figure('重构数据')
@@ -57,6 +61,9 @@ def main():
     plt.title('降维数据', fontsize=14, fontproperties = "SimHei")
     plt.plot(resX[:, 0], resX[:, 1], "*")
     plt.show()
+
+
+
 if __name__ == '__main__':
     main()
 
