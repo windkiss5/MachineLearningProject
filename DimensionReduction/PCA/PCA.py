@@ -59,7 +59,7 @@ def main():
     resX = PCA(X).PCA_EVD()
     plt.figure('降维数据')
     plt.title('降维数据', fontsize=14, fontproperties = "SimHei")
-    plt.plot(resX[:, 0], resX[:, 1], "*")
+    plt.plot(resX[:,1 ], resX[:,0], "*")
     plt.show()
 
 
