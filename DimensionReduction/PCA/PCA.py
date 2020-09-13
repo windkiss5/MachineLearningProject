@@ -22,16 +22,16 @@ class PCA:
         sigma = np.cov(self.X, rowvar=False)
         # 提取sigma的特征值,特征向量
         eigvals, eigvecs = np.linalg.eig(sigma)
-        print("排序前的特征值")
-        print(pd.DataFrame(eigvals))
-        print("排序前的特征矩阵")
-        print(pd.DataFrame(eigvecs))
+        # print("排序前的特征值")
+        # print(pd.DataFrame(eigvals))
+        # print("排序前的特征矩阵")
+        # print(pd.DataFrame(eigvecs))
         # 升序排序
         index =np.argsort(eigvals)
         eigvals = eigvals[index]
         eigvecs = eigvecs[:,index]
-        print("排序后的特征向量")
-        print(pd.DataFrame(eigvecs))
+        # print("排序后的特征向量")
+        # print(pd.DataFrame(eigvecs))
         # 重构
         resX = self.X.dot(eigvecs)
         plt.figure('重构数据')
@@ -47,7 +47,8 @@ class PCA:
 
 def main():
     # 按高斯分布随机生成数据(以三维数据为例)
-    X = np.random.normal(loc=100, scale=1, size=(100, 3))
+    # X = np.random.normal(loc=100, scale=1, size=(100, 3))
+    X = np.array([[-1, -1, 0, 2, 1], [2, 0, 0, -1, -1], [2, 0, 1, 1, 0]])
     plt.figure('原始数据')
     ax = plt.gca(projection='3d')
     plt.title('原始数据', fontsize=14, fontproperties = "SimHei")
@@ -56,7 +57,9 @@ def main():
                alpha=0.5, marker='o')
     plt.show()
     # PCA
-    resX = PCA(X).PCA_EVD()
+    resX = PCA(X).PCA_EVD(3)
+    print("resX")
+    print(pd.DataFrame(resX))
     plt.figure('降维数据')
     plt.title('降维数据', fontsize=14, fontproperties = "SimHei")
     plt.plot(resX[:,1 ], resX[:,0], "*")
