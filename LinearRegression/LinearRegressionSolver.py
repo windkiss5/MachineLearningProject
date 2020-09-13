@@ -42,7 +42,7 @@ class LinearRegressionSolver:
         else:
             self.W = np.linalg.inv(self.X.T.dot(self.X) + self.coefficient * np.identity(self.characteristicSize)).dot(self.X.T).dot(self.Y)
         return np.array(self.W)
-
+#
     # 梯度下降法 W = W - α * ▽W
     def GradientDescentMethod(self, learningRate=0.0001, epoch=1000):
         for i in range(epoch):
