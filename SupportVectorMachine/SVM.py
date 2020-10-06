@@ -4,16 +4,22 @@
 # @Author: WINDKISS
 # @File: SVM.py
 # @Function: What SVM.py can do?
+"""
+数据集：Mnist
+训练集数量：60000(实际使用：1000)
+测试集数量：10000（实际使用：100)
+------------------------------
+"""
+import time
 import numpy as np
-import pandas as pd
 import math
-import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class SVM:
     def __init__(self, X, Y, C=200, toler=0.001, sigma=10):
         """
-        SVM类 本SVM仅实现了高斯核下对双月分类数据集的分类
+        SVM类 本SVM类仅实现了高斯核下对双月分类数据集的分类
         :param X: 训练集数据
         :param Y: 训练集标签 Y∈{-1， 1}
         :param C: 惩罚常数
@@ -32,11 +38,13 @@ class SVM:
         # lambdas: 待优化拉格朗日算子
         self.lambdas = [0.] * self.simpleSize
         # E: Ej = f(xj) - yj
-        self.E = -1 * self.Y
+        self.E = -1. * self.Y
         # 支持向量下标集
         self.supportVecIndex = []
         # 高斯核函数矩阵(RBF核)
         self.K = self.calcKernel()
+        # 标记是否训练
+        self.isRunning = False
 
     def calcKernel(self):
         """
@@ -50,7 +58,7 @@ class SVM:
             for j in range(i, self.simpleSize):
                 Xj = self.X[j, :]
                 # 先计算||Xi - Xj||^2
-                result = (Xi - Xj) * (Xi - Xj).T
+                result = (Xi - Xj).T.dot((Xi - Xj))
                 # 分子除以分母后去指数，得到的即为高斯核结果
                 result = np.exp(-1 * result / (2 * self.sigma ** 2))
                 # 将Xi*Xj的结果存放入k[i][j]和k[j][i]中
@@ -96,7 +104,8 @@ class SVM:
         :param j: 样本下标
         :return: Ej
         """
-        return self.calcFxj(j) - self.Y[j]
+        result = self.calcFxj(j) - self.Y[j]
+        return result
 
     def searchLambda2(self, i):
         """
@@ -114,32 +123,18 @@ class SVM:
             lambda2 = self.lambdas[index]
             E2 = self.E[index]
         else:
-            if i == 0:
-                index = 1
-            else:
-                index = 0
             # 所有Ei都不相同 -> 启发式选择
-            if E1 > 0:
-                # 如果E1>0, 选取最小的Ei为E2
-                for j in range(self.simpleSize):
-                    if self.E[j] < self.E[index] and index != i:
-                        index = j
-                lambda2 = self.lambdas[index]
-                E2 = self.E[index]
-            elif E1 < 0:
-                # 如果E1<0, 选取最大的Ei为E2
-                for j in range(self.simpleSize):
-                    if self.E[j] > self.E[index] and index != i:
-                        index = j
-                lambda2 = self.lambdas[index]
-                E2 = self.E[index]
-            else:
-                # 如果E1=0, 选取绝对值最大的Ei为E2
-                for j in range(self.simpleSize):
-                    if math.fabs(self.E[j]) > math.fabs(self.E[index]) and index != i:
-                        index = j
-                lambda2 = self.lambdas[index]
-                E2 = self.E[index]
+            # 选择|Ei - Ej|最大对应的那个j作为index
+            maxE1_E2 = -1
+            index = 0
+            for j in range(self.simpleSize):
+                tmpE1_E2 = math.fabs(E1 - self.E[j])
+                if tmpE1_E2 > maxE1_E2:
+                    maxE1_E2 = tmpE1_E2
+                    index = j
+
+            lambda2 = self.lambdas[index]
+            E2 = self.E[index]
 
         return index, lambda2, E2
 
@@ -148,11 +143,12 @@ class SVM:
         开始训练
         :param iter: 轮数
         """
+        self.isRunning = True
         # iterStep：当前迭代次数，超过设置次数还未收敛则强制停止
         iterStep = 0
         # paramChanged：单次迭代中有参数改变则增加1
         paramChanged = 1
-        while iterStep < iter and paramChanged > 0:
+        while iterStep < iter and paramChanged > 0 and self.isRunning is True:
             # 打印当前迭代轮数
             print('iter:%d:%d' % (iterStep, iter))
             # 迭代步数加1
@@ -178,7 +174,7 @@ class SVM:
                         L = max(0, lambda1Old + lambda2Old - self.C)
                         H = min(self.C, lambda1Old + lambda2Old)
                     else:
-                        L = max(-1 * lambda1Old + lambda2Old)
+                        L = max(0, -1 * lambda1Old + lambda2Old)
                         H = min(-1 * lambda1Old + lambda2Old + self.C, self.C)
                     if L == H:
                         # 如果两者相等，说明该变量无法再优化，直接跳到下一次循环
@@ -224,52 +220,148 @@ class SVM:
             self.supportVecIndex.clear()
             for i in range(self.simpleSize):
                 # 如果 0 < lambda < C，说明是支持向量
-                if -1 * self.toler <= self.lambdas[i] <= self.C + self.toler:
+                if self.toler <= self.lambdas[i] <= self.C + self.toler:
                     # 将支持向量的索引保存起来
                     self.supportVecIndex.append(i)
 
+    def calcSinglKernel(self, x, xi):
+        x = np.array(x)
+        xi = np.array(xi)
+        result = (x - xi).dot((x - xi).T)
+        result = np.exp(-1 * result / (2 * self.sigma ** 2))
+        return result
 
-def getMoonData(N, d=-2, r=10, w=2):
-    N1 = 10 * N
-    w2 = w / 2
-    done = True
-    data = np.empty(0)
-    while done:
-        # generate Rectangular data
-        tmp_x = 2 * (r + w2) * (np.random.random([N1, 1]) - 0.5)
-        tmp_y = (r + w2) * np.random.random([N1, 1])
-        tmp = np.concatenate((tmp_x, tmp_y), axis=1)
-        tmp_ds = np.sqrt(tmp_x * tmp_x + tmp_y * tmp_y)
-        # generate double moon data ---upper
-        idx = np.logical_and(tmp_ds > (r - w2), tmp_ds < (r + w2))
-        idx = (idx.nonzero())[0]
+    def predict(self, x):
+        """
+        预测单个样本的分类结果
+        :param x: 样本
+        :return: 分类结果 {-1， 1}
+        """
+        result = 0
+        # 这里只考虑支持向量的原因是在于分类正确的样本对应的lambda恒为0
+        for i in self.supportVecIndex:
+            # 先单独将核函数计算出来
+            tmp = self.calcSinglKernel(x, self.X[i, :])
+            # 对每一项子式进行求和，最终计算得到求和项的值
+            result += self.lambdas[i] * self.Y[i] * tmp
+        result += self.B
+        return np.sign(result)
 
-        if data.shape[0] == 0:
-            data = tmp.take(idx, axis=0)
+    def test(self, X, Y):
+        X = np.array(X)
+        # 错误计数值
+        errorCnt = 0
+        # 遍历测试集所有样本
+        for i in range(len(X)):
+            # 获取预测结果
+            result = self.predict(X[i, :].T)
+            # 打印目前进度
+            print('test:%d:%d' % (i, len(X)), 'predict:', result, ' label:', Y[i])
+            # 如果预测与标签不一致，错误计数值加一
+            if result != Y[i]:
+                errorCnt += 1
+        # 返回正确率
+        return 1 - errorCnt / len(X)
+
+
+def loadData(fileName):
+    '''
+    加载文件
+    :param fileName:要加载的文件路径
+    :return: 数据集和标签集
+    '''
+    # 存放数据及标记
+    dataArr = [];
+    labelArr = []
+    # 读取文件
+    fr = open(fileName)
+    # 遍历文件中的每一行
+    for line in fr.readlines():
+        # 获取当前行，并按“，”切割成字段放入列表中
+        # strip：去掉每行字符串首尾指定的字符（默认空格或换行符）
+        # split：按照指定的字符将字符串切割成每个字段，返回列表形式
+        curLine = line.strip().split(',')
+        # 将每行中除标记外的数据放入数据集中（curLine[0]为标记信息）
+        # 在放入的同时将原先字符串形式的数据转换为0-1的浮点型
+        dataArr.append([int(num) / 255 for num in curLine[1:]])
+        # 将标记信息放入标记集中
+        # 放入的同时将标记转换为整型
+        # 数字0标记为1  其余标记为-1
+        if int(curLine[0]) == 0:
+            labelArr.append(1)
         else:
-            data = np.concatenate((data, tmp.take(idx, axis=0)), axis=0)
-        if data.shape[0] >= N:
-            done = False
-    # print(data)
-    db_moon = data[0:N, :]
-    # print(db_moon)
-    # generate double moon data ----down
-    data_t = np.empty([N, 2])
-    data_t[:, 0] = data[0:N, 0] + r
-    data_t[:, 1] = -data[0:N, 1] - d
-    db_moon = np.concatenate((db_moon, data_t), axis=0)
-    Y = [1 if _ <= N else -1 for _ in range(2 * N)]
-    Y = np.array(Y)
-    # 打乱训练集
-    index = np.random.permutation(2 * N)
-    X = db_moon[index]
-    Y = Y[index]
-    return X, Y
+            labelArr.append(-1)
+    # 返回数据集和标记
+    return dataArr, labelArr
+
+
+# def getMoonData(N, d=-2, r=10, w=2):
+#     N1 = 10 * N
+#     w2 = w / 2
+#     done = True
+#     data = np.empty(0)
+#     while done:
+#         # generate Rectangular data
+#         tmp_x = 2 * (r + w2) * (np.random.random([N1, 1]) - 0.5)
+#         tmp_y = (r + w2) * np.random.random([N1, 1])
+#         tmp = np.concatenate((tmp_x, tmp_y), axis=1)
+#         tmp_ds = np.sqrt(tmp_x * tmp_x + tmp_y * tmp_y)
+#         # generate double moon data ---upper
+#         idx = np.logical_and(tmp_ds > (r - w2), tmp_ds < (r + w2))
+#         idx = (idx.nonzero())[0]
+#
+#         if data.shape[0] == 0:
+#             data = tmp.take(idx, axis=0)
+#         else:
+#             data = np.concatenate((data, tmp.take(idx, axis=0)), axis=0)
+#         if data.shape[0] >= N:
+#             done = False
+#     # print(data)
+#     db_moon = data[0:N, :]
+#     # print(db_moon)
+#     # generate double moon data ----down
+#     data_t = np.empty([N, 2])
+#     data_t[:, 0] = data[0:N, 0] + r
+#     data_t[:, 1] = -data[0:N, 1] - d
+#     db_moon = np.concatenate((db_moon, data_t), axis=0)
+#     Y = [1 if _ <= N else -1 for _ in range(2 * N)]
+#     Y = np.array(Y)
+#
+#     return db_moon, Y
 
 
 def main():
-    N = 100
-    X, Y = getMoonData(N)
+    start = time.time()
+
+    # 获取训练集及标签
+    print('start read transSet')
+    trainDataList, trainLabelList = loadData('C:/Users/WINDKISS/Downloads/data/mnist_train.csv')
+
+    # 获取测试集及标签
+    print('start read testSet')
+    testDataList, testLabelList = loadData('C:/Users/WINDKISS/Downloads/data/mnist_test.csv')
+
+    # 初始化SVM类
+    print('start init SVM')
+    X = np.array(trainDataList[:1000])
+    Y = np.array(trainLabelList[:1000])
+    # 打乱训练集
+    index = np.random.permutation(1000)
+    X = X[index]
+    Y = Y[index]
+    svm = SVM(X, Y)
+
+    # 开始训练
+    print('start to train')
+    svm.train()
+
+    # 开始测试
+    print('start to test')
+    accuracy = svm.test(testDataList[:100], testLabelList[:100])
+    print('the accuracy is:%d' % (accuracy * 100), '%')
+
+    # 打印时间
+    print('time span:', time.time() - start)
 
 
 if __name__ == '__main__':
