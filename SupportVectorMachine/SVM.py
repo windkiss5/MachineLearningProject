@@ -271,7 +271,7 @@ def loadData(fileName):
     :return: 数据集和标签集
     '''
     # 存放数据及标记
-    dataArr = [];
+    dataArr = []
     labelArr = []
     # 读取文件
     fr = open(fileName)
