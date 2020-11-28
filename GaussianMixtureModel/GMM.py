@@ -54,7 +54,7 @@ class GMM():
             tmp = (x - mu).T.dot(np.linalg.inv(sigma)).dot(x - mu)
         except:
             tmp = (x - mu).T.dot(np.linalg.pinv(sigma)).dot(x - mu)
-        right = np.exp(-1 / 2 * tmp)
+        right = np.exp(-1 / 2 * tmp[0])
         val = left * right
 
         return val
@@ -79,27 +79,37 @@ class GMM():
                     self.GaussianMatrix[i][k] = self.calGaussian(self.X[i], self.mu[k], self.sigma[k])
             # 计算P(z^i = z_k|x_i, seta^t)
             for i in range(self.sampleSize):
-                tmp = np.reshape(self.GaussianMatrix[i], (1, self.K)).dot(self.alpha)[0]
+                tmp = self.GaussianMatrix[i]
+                tmp = np.reshape(tmp, (1, self.K)).dot(self.alpha)[0]
                 for k in range(self.K):
-                    self.ZMatrix[i][k] = self.alpha[k] * self.GaussianMatrix[i, k] / tmp
+                    self.ZMatrix[i][k] = self.alpha[k] * self.GaussianMatrix[i][k] / tmp
 
+            # ---- 注：这里三个参数分别求取式为了更好的理解公式，实际上三个参数可在同一个循环下求取以优化函数运算时间 ---- #
             # alpha
             for k in range(self.K):
-                self.alpha[k] = self.ZMatrix[k, :].sum() / self.sampleSize
+                self.alpha[k] = self.ZMatrix[:, k].sum() / self.sampleSize
 
             # mu
             for k in range(self.K):
-                tmp = []
+                tmpVal = np.zeros((1, self.features))
                 for i in range(self.sampleSize):
-                    tmp = self.X[i] * self.ZMatrix[i, k]
-                self.mu[k] = tmp / self.ZMatrix[k].sum()
+                    tmp = self.X[i] * self.ZMatrix[i][k]
+                    tmp = np.reshape(tmp, (1, self.features))
+                    tmpVal += tmp
+                self.mu[k] = tmpVal / self.ZMatrix[:, k].sum()
 
             # sigma
             for k in range(self.K):
-                tmp = []
+                mu_k = self.mu[k]
+                mu_k = np.reshape(mu_k, (self.features, 1))
+                tmpVal = np.zeros((self.features, self.features))
                 for i in range(self.sampleSize):
-                    tmp = self.X[i].T.dot(self.X[i]) * self.ZMatrix[i, k]
-                self.sigma[k] = tmp / self.ZMatrix[k].sum()
+                    x_i = np.reshape(self.X[i], (self.features, 1))
+                    tmp = x_i - mu_k
+                    tmp = tmp.dot(tmp.T) * self.ZMatrix[i][k]
+                    tmp = np.reshape(tmp, (self.features, self.features))
+                    tmpVal += tmp
+                self.sigma[k] = tmpVal / self.ZMatrix[:, k].sum()
 
         # --------------- 聚类 ---------------- #
         maxClass = -1
