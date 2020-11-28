@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 class GDA():
     def __init__(self, X, Y):
         self.X = X
@@ -52,8 +53,8 @@ class GDA():
     def predict(X, theta, mu1, mu2, sigma):
         detSigma = np.linalg.det(sigma)
         features = X.shape[0]
-        P1 = np.log(1 / np.power(2* np.pi, features / 2) * np.power(detSigma, 1/2)) -\
-             (1/2)*(X - mu1).T.dot(np.linalg.inv(sigma)).dot(X - mu1) + \
+        P1 = np.log(1 / np.power(2 * np.pi, features / 2) * np.power(detSigma, 1 / 2)) - \
+             (1 / 2) * (X - mu1).T.dot(np.linalg.inv(sigma)).dot(X - mu1) + \
              np.log(theta)
         P2 = np.log(1 / np.power(2 * np.pi, features / 2) * np.power(detSigma, 1 / 2)) - \
              (1 / 2) * (X - mu2).T.dot(np.linalg.inv(sigma)).dot(X - mu2) + \
@@ -76,7 +77,6 @@ def main():
     X2 = np.random.normal(loc=-0.9, scale=0.5, size=(num, 2))
     Y2 = 0 * np.ones((num, 1))
 
-
     plt.plot(X1[:, 0], X1[:, 1], "*")
     plt.plot(X2[:, 0], X2[:, 1], "*")
 
@@ -87,19 +87,20 @@ def main():
     X = X[index]
     Y = Y[index]
 
-    theta, mu1, mu2, sigma  = GDA(X, Y).GDAFormulaMethod()
+    theta, mu1, mu2, sigma = GDA(X, Y).GDAFormulaMethod()
 
     # 预测
     # 类别 1
     XP1 = np.random.normal(loc=2.3, scale=0.7, size=(2, 1))
-    print("数据:(",XP1[0][0],",",XP1[1][0],")","事实分类为：第1类，预测结果为：第",GDA.predict(XP1, theta, mu1, mu2, sigma),"类")
+    print("数据:(", XP1[0][0], ",", XP1[1][0], ")", "事实分类为：第1类，预测结果为：第", GDA.predict(XP1, theta, mu1, mu2, sigma), "类")
     plt.plot(XP1[0][0], X1[1][0], "^", markersize=15)
 
     XP2 = np.random.normal(loc=-0.9, scale=0.5, size=(2, 1))
-    print("数据:(",XP2[0][0],",",XP2[1][0],")","事实分类为：第0类，预测结果为：第",GDA.predict(XP2, theta, mu1, mu2, sigma),"类")
+    print("数据:(", XP2[0][0], ",", XP2[1][0], ")", "事实分类为：第0类，预测结果为：第", GDA.predict(XP2, theta, mu1, mu2, sigma), "类")
     plt.plot(XP2[0][0], X2[1][0], "o", markersize=15)
 
     plt.show()
+
 
 if __name__ == '__main__':
     main()

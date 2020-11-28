@@ -33,10 +33,10 @@ class SVM:
         self.C = C
         self.sigma = sigma
         self.toler = toler
-        # simpleSize：训练集数量    features：样本特征数目
-        self.simpleSize, self.features = np.shape(self.X)
+        # sampleSize：训练集数量    features：样本特征数目
+        self.sampleSize, self.features = np.shape(self.X)
         # lambdas: 待优化拉格朗日算子
-        self.lambdas = [0.] * self.simpleSize
+        self.lambdas = [0.] * self.sampleSize
         # E: Ej = f(xj) - yj
         self.E = -1. * self.Y
         # 支持向量下标集
@@ -51,11 +51,11 @@ class SVM:
         计算核函数矩阵
         :return: 高斯核函数矩阵
         """
-        K = [[0. for _ in range(self.simpleSize)] for _ in range(self.simpleSize)]
-        for i in range(self.simpleSize):
+        K = [[0. for _ in range(self.sampleSize)] for _ in range(self.sampleSize)]
+        for i in range(self.sampleSize):
             # 取出下标为i的样本
             Xi = self.X[i, :]
-            for j in range(i, self.simpleSize):
+            for j in range(i, self.sampleSize):
                 Xj = self.X[j, :]
                 # 先计算||Xi - Xj||^2
                 result = (Xi - Xj).T.dot((Xi - Xj))
@@ -119,7 +119,7 @@ class SVM:
             # 所有Ei都相同 -> 随机选择
             index = i
             while index == i:
-                index = np.random.randint(0, self.simpleSize)
+                index = np.random.randint(0, self.sampleSize)
             lambda2 = self.lambdas[index]
             E2 = self.E[index]
         else:
@@ -127,7 +127,7 @@ class SVM:
             # 选择|Ei - Ej|最大对应的那个j作为index
             maxE1_E2 = -1
             index = 0
-            for j in range(self.simpleSize):
+            for j in range(self.sampleSize):
                 tmpE1_E2 = math.fabs(E1 - self.E[j])
                 if tmpE1_E2 > maxE1_E2:
                     maxE1_E2 = tmpE1_E2
@@ -155,7 +155,7 @@ class SVM:
             iterStep += 1
             # 新的一轮将参数改变标志位重新置0
             paramChanged = 0
-            for i in range(self.simpleSize):
+            for i in range(self.sampleSize):
                 # 对于lambda1的选择，由于在大量训练集下去寻找“违反KKT条件最严重的支持向量或者样本”很费时，于是直接采用“首个违反KKT条件的样本的lambda”作为lambda1
                 if self.isSatisfyKKT(i) is False:
                     index1 = i
@@ -218,7 +218,7 @@ class SVM:
             # ---------------- 查找支持向量 ---------------------#
             # 清空supportVecIndex[]
             self.supportVecIndex.clear()
-            for i in range(self.simpleSize):
+            for i in range(self.sampleSize):
                 # 如果 0 < lambda < C，说明是支持向量
                 if self.toler <= self.lambdas[i] <= self.C + self.toler:
                     # 将支持向量的索引保存起来
