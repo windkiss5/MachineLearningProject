@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-class GMM():
+class GMM:
     def __init__(self, X, K):
         self.X = X
         self.K = K
